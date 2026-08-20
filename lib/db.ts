@@ -125,7 +125,7 @@ function loadLogsFromFile(): WebhookLogItem[] {
       if (Array.isArray(parsed) && parsed.length > 0) {
         const validLogs = parsed
           .map(normalizeLogItem)
-          .filter(l => l.do_id || l.nopol || l.no_do || (l.payload_json && Object.keys(l.payload_json).length > 1));
+          .filter((l: WebhookLogItem) => l.do_id || l.nopol || l.no_do || (l.payload_json && Object.keys(l.payload_json).length > 1));
         if (validLogs.length > 0) return validLogs;
       }
     }
@@ -176,7 +176,7 @@ async function fetchRemoteLogs(): Promise<WebhookLogItem[]> {
       if (json?.data?.logs && Array.isArray(json.data.logs) && json.data.logs.length > 0) {
         const validLogs = json.data.logs
           .map(normalizeLogItem)
-          .filter(l => l.do_id || l.nopol || l.no_do || (l.payload_json && Object.keys(l.payload_json).length > 1));
+          .filter((l: WebhookLogItem) => l.do_id || l.nopol || l.no_do || (l.payload_json && Object.keys(l.payload_json).length > 1));
         if (validLogs.length > 0) {
           return validLogs;
         }
