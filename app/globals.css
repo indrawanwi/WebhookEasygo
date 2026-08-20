@@ -1,0 +1,89 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@layer base {
+  :root {
+    --background: #F7F8FA;
+    --foreground: #111827;
+    --card-bg: #FFFFFF;
+    --card-fg: #111827;
+    --card-muted: #6B7280;
+    --border-color: #E5E7EB;
+    --accent: #3B82F6;
+    --accent-fg: #FFFFFF;
+    --ring: rgba(59, 130, 246, 0.4);
+  }
+
+  .dark {
+    --background: #09090B;
+    --foreground: #F9FAFB;
+    --card-bg: #111113;
+    --card-fg: #F9FAFB;
+    --card-muted: #9CA3AF;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --accent: #3B82F6;
+    --accent-fg: #FFFFFF;
+    --ring: rgba(59, 130, 246, 0.4);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom Bento Card Styling */
+.bento-card {
+  background-color: var(--card-bg);
+  color: var(--card-fg);
+  border: 1px solid var(--border-color);
+  border-radius: 1.25rem; /* 20px */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bento-card-hover:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Tabular Numbers for Metrics */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Pulse indicator animation for Live Stream & Alarms */
+@keyframes live-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.15);
+  }
+}
+
+.animate-live-pulse {
+  animation: live-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model WebhookLog {
+  id               String   @id @default(cuid())
+  do_id            BigInt?
+  nopol            String?
+  no_do            String?
+  no_sj            String?
+  status_do        Int?
+  ket_status_do    String?
+  tipe_data        String?
+  ket_tipe_data    String?
+  direction_status String?
+  distance_km      Float?
+  temperature      Float?
+  payload_json     Json
+  event_time       DateTime?
+  received_at      DateTime @default(now())
+
+  @@index([do_id])
+  @@index([nopol])
+  @@index([tipe_data])
+  @@index([status_do])
+  @@index([received_at])
+  @@map("webhook_logs")
+}
