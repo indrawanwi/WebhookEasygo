@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface EventMapProps {
   lat: number;
@@ -47,20 +47,31 @@ function MapContainer({
   address,
   height,
 }: EventMapProps) {
-  useEffect(() => {
-    // Import Leaflet CSS dynamically
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    document.head.appendChild(link);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
 
-    let mapInstance: any = null;
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    // Load Leaflet CSS dynamically
+    const linkId = "leaflet-css-cdn";
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+    }
 
     import("leaflet").then((L) => {
-      const mapContainer = document.getElementById("event-leaflet-map");
-      if (!mapContainer) return;
+      if (!containerRef.current) return;
 
-      // Fix icon issues in Leaflet with webpack/next
+      // Destroy old instance if re-initializing
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+
       const customIcon = L.icon({
         iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
         iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -71,12 +82,13 @@ function MapContainer({
         shadowSize: [41, 41],
       });
 
-      mapInstance = L.map("event-leaflet-map").setView([lat, lon], 14);
+      const map = L.map(containerRef.current).setView([lat, lon], 14);
+      mapRef.current = map;
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
-      }).addTo(mapInstance);
+      }).addTo(map);
 
       const popupContent = `
         <div style="font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.4; color: #111827;">
@@ -96,21 +108,23 @@ function MapContainer({
       `;
 
       L.marker([lat, lon], { icon: customIcon })
-        .addTo(mapInstance)
+        .addTo(map)
         .bindPopup(popupContent)
         .openPopup();
     });
 
     return () => {
-      if (mapInstance) {
-        mapInstance.remove();
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
       }
     };
   }, [lat, lon, vehicle, eventName, address]);
 
   return (
     <div className="relative w-full overflow-hidden rounded-2xl border border-[var(--border-color)]">
-      <div id="event-leaflet-map" style={{ height }} className="w-full z-10" />
+      <div ref={containerRef} style={{ height }} className="w-full z-10" />
     </div>
   );
 }
+

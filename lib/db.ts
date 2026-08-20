@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { WebhookLogItem, H2HDOReply } from './types';
+import fs from 'fs';
+import path from 'path';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -16,8 +18,12 @@ export const prisma =
 
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
 
-// Initial sample seed data to populate dashboard immediately if DB is empty or unconfigured
-const SAMPLE_LOGS: WebhookLogItem[] = [
+// File persistence path for local / fallback mode so data NEVER disappears on server restarts
+const isVercel = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const DATA_DIR = isVercel ? '/tmp' : path.join(process.cwd(), 'data');
+const FILE_PATH = path.join(DATA_DIR, 'webhook_logs.json');
+
+const INITIAL_SAMPLE_LOGS: WebhookLogItem[] = [
   {
     id: "log_sample_01",
     do_id: 1088054,
@@ -330,9 +336,52 @@ const SAMPLE_LOGS: WebhookLogItem[] = [
   }
 ];
 
-if (!global.inMemoryLogs) {
-  global.inMemoryLogs = [...SAMPLE_LOGS];
+// Helper functions for disk file persistence
+function loadLogsFromFile(): WebhookLogItem[] {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (fs.existsSync(FILE_PATH)) {
+      const raw = fs.readFileSync(FILE_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+    // Write sample logs initially if file system is writable
+    try {
+      fs.writeFileSync(FILE_PATH, JSON.stringify(INITIAL_SAMPLE_LOGS, null, 2));
+    } catch {
+      // Ignore EROFS on read-only environments
+    }
+    return INITIAL_SAMPLE_LOGS;
+  } catch (err) {
+    console.warn("Could not read persistent log file, falling back to initial sample logs:", err);
+    return INITIAL_SAMPLE_LOGS;
+  }
 }
+
+function saveLogsToFile(logs: WebhookLogItem[]) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(FILE_PATH, JSON.stringify(logs, null, 2));
+  } catch (err) {
+    console.warn("Could not save to persistent log file:", err);
+  }
+}
+
+function getInMemoryLogs(): WebhookLogItem[] {
+  if (!global.inMemoryLogs || global.inMemoryLogs.length === 0) {
+    global.inMemoryLogs = loadLogsFromFile();
+  }
+  return global.inMemoryLogs;
+}
+
+// Initialize in-memory logs
+global.inMemoryLogs = getInMemoryLogs();
 
 export async function saveWebhookLog(payload: H2HDOReply): Promise<WebhookLogItem> {
   const eventTime = payload.even?.tgl_event || payload.alarm?.start_time || payload.asal?.tgl_masuk || new Date().toISOString();
@@ -357,7 +406,7 @@ export async function saveWebhookLog(payload: H2HDOReply): Promise<WebhookLogIte
   };
 
   try {
-    if (process.env.DATABASE_URL) {
+    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgresql://')) {
       await prisma.webhookLog.create({
         data: {
           id: logItem.id,
@@ -379,11 +428,14 @@ export async function saveWebhookLog(payload: H2HDOReply): Promise<WebhookLogIte
       });
     }
   } catch (err) {
-    console.warn("DB write fallback to in-memory store:", err);
+    console.warn("PostgreSQL write fallback to local disk store:", err);
   }
 
-  // Always keep in-memory store updated for instant queries
-  global.inMemoryLogs!.unshift(logItem);
+  // Always append to inMemoryLogs AND persist to disk file so data is NEVER lost across restarts
+  const logs = getInMemoryLogs();
+  logs.unshift(logItem);
+  saveLogsToFile(logs);
+
   return logItem;
 }
 
@@ -402,7 +454,7 @@ export async function getWebhookLogs(filters?: {
   const limit = filters?.limit || 20;
 
   try {
-    if (process.env.DATABASE_URL) {
+    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgresql://')) {
       const where: any = {};
 
       if (filters?.search) {
@@ -467,11 +519,13 @@ export async function getWebhookLogs(filters?: {
       };
     }
   } catch (err) {
-    console.warn("DB query fallback to in-memory store:", err);
+    console.warn("PostgreSQL query fallback to disk file store:", err);
   }
 
-  // In-memory query fallback
-  let filtered = global.inMemoryLogs || [];
+  // Reload logs from disk file in case file changed
+  const currentLogs = getInMemoryLogs();
+
+  let filtered = currentLogs;
 
   if (filters?.do_id) {
     filtered = filtered.filter(l => l.do_id === filters.do_id);
@@ -518,7 +572,7 @@ export async function getWebhookLogs(filters?: {
 
 export async function getWebhookLogById(id: string): Promise<WebhookLogItem | null> {
   try {
-    if (process.env.DATABASE_URL) {
+    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgresql://')) {
       const item = await prisma.webhookLog.findUnique({ where: { id } });
       if (item) {
         return {
@@ -541,10 +595,11 @@ export async function getWebhookLogById(id: string): Promise<WebhookLogItem | nu
       }
     }
   } catch (err) {
-    console.warn("DB query by ID fallback to in-memory store:", err);
+    console.warn("DB query by ID fallback to disk file store:", err);
   }
 
-  const memoryItem = (global.inMemoryLogs || []).find(l => l.id === id);
+  const currentLogs = loadLogsFromFile();
+  const memoryItem = currentLogs.find(l => l.id === id);
   return memoryItem || null;
 }
 
@@ -555,14 +610,13 @@ export async function getDashboardStats(): Promise<{
   completedDO: number;
   messagesToday: number;
 }> {
-  const { logs } = await getWebhookLogs({ limit: 5000 });
+  const { logs } = await getWebhookLogs({ limit: 10000 });
 
   const totalMessages = logs.length;
   const uniqueDOs = new Set(logs.map(l => l.do_id).filter(Boolean));
   const totalDO = uniqueDOs.size;
 
-  // Active alarms calculation: Alarm logs with direction_status === 'START' that don't have a newer 'STOP' for same do_id + ket_tipe_data
-  const alarmMap = new Map<string, string>(); // key -> 'START' | 'STOP'
+  const alarmMap = new Map<string, string>();
   logs.forEach(l => {
     if (l.tipe_data === 'ALARM' && l.do_id && l.ket_tipe_data && l.direction_status) {
       const key = `${l.do_id}_${l.ket_tipe_data}`;
