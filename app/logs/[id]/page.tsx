@@ -212,7 +212,7 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
                     <Gauge className="w-3.5 h-3.5 text-sky-500" /> Distance
                   </span>
                   <span className="text-base font-bold font-tabular text-[var(--foreground)]">
-                    {log.distance_km !== null ? `${log.distance_km.toFixed(1)} km` : "—"}
+                    {typeof log.distance_km === "number" ? `${log.distance_km.toFixed(1)} km` : "—"}
                   </span>
                 </div>
 
@@ -221,7 +221,7 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
                     <Thermometer className="w-3.5 h-3.5 text-rose-500" /> Temp #1
                   </span>
                   <span className="text-base font-bold font-tabular text-[var(--foreground)]">
-                    {log.temperature !== null ? `${log.temperature.toFixed(1)}°C` : "—"}
+                    {typeof log.temperature === "number" ? `${log.temperature.toFixed(1)}°C` : "—"}
                   </span>
                 </div>
 
@@ -274,7 +274,7 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
                   <div>
                     <span className="text-zinc-400 block">Coordinates (Lat, Lon)</span>
                     <span className="font-mono text-zinc-700 dark:text-zinc-300">
-                      {payload.even.lat && payload.even.lon
+                      {typeof payload.even.lat === "number" && typeof payload.even.lon === "number"
                         ? `${payload.even.lat.toFixed(5)}, ${payload.even.lon.toFixed(5)}`
                         : "—"}
                     </span>

@@ -102,7 +102,7 @@ function MapContainer({
             ${address || ""}
           </div>
           <div style="font-family: monospace; font-size: 11px; color: #9CA3AF; margin-top: 6px;">
-            Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}
+            Lat: ${typeof lat === "number" ? lat.toFixed(6) : "0"}, Lon: ${typeof lon === "number" ? lon.toFixed(6) : "0"}
           </div>
         </div>
       `;

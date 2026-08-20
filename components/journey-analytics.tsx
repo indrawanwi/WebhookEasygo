@@ -62,7 +62,7 @@ export function JourneyAnalytics({
                 <Gauge className="w-3.5 h-3.5 text-zinc-400" /> Total KM
               </span>
               <span className="text-base font-bold tabular-nums text-[var(--foreground)]">
-                {info?.total_km !== null && info?.total_km !== undefined ? `${info.total_km.toFixed(1)} km` : "—"}
+                {typeof info?.total_km === "number" ? `${info.total_km.toFixed(1)} km` : "—"}
               </span>
             </div>
 

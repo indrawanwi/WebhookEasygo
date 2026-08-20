@@ -263,13 +263,13 @@ export default function LogsPage() {
                       </td>
 
                       <td className="py-3 px-4 font-mono text-right text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                        {log.distance_km !== null && log.distance_km !== undefined
+                        {typeof log.distance_km === "number"
                           ? `${log.distance_km.toFixed(1)} km`
                           : "—"}
                       </td>
 
                       <td className="py-3 px-4 font-mono text-right text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                        {log.temperature !== null && log.temperature !== undefined
+                        {typeof log.temperature === "number"
                           ? `${log.temperature.toFixed(1)}°C`
                           : "—"}
                       </td>

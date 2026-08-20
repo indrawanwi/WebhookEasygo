@@ -350,9 +350,9 @@ export default function DashboardPage() {
                         {log.ket_tipe_data || log.ket_status_do || "Telemetry update"}
                       </p>
                       <p className="text-[11px] text-zinc-400 font-mono">
-                        {log.distance_km !== null ? `${log.distance_km.toFixed(1)} km` : ""}
-                        {log.distance_km !== null && log.temperature !== null ? " · " : ""}
-                        {log.temperature !== null ? `${log.temperature.toFixed(1)}°C` : ""}
+                        {typeof log.distance_km === "number" ? `${log.distance_km.toFixed(1)} km` : ""}
+                        {typeof log.distance_km === "number" && typeof log.temperature === "number" ? " · " : ""}
+                        {typeof log.temperature === "number" ? `${log.temperature.toFixed(1)}°C` : ""}
                       </p>
                     </div>
 

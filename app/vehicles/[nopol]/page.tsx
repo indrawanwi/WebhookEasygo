@@ -106,7 +106,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ nopol:
         <div className="bento-card p-4">
           <span className="text-xs text-zinc-400 block mb-1">Latest Odometer / Distance</span>
           <span className="text-2xl font-extrabold font-tabular text-[var(--foreground)]">
-            {latestLog?.distance_km !== null && latestLog?.distance_km !== undefined
+            {typeof latestLog?.distance_km === "number"
               ? `${latestLog.distance_km.toFixed(1)} km`
               : "—"}
           </span>
@@ -114,7 +114,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ nopol:
         <div className="bento-card p-4">
           <span className="text-xs text-zinc-400 block mb-1">Latest Temperature</span>
           <span className="text-2xl font-extrabold font-tabular text-[var(--foreground)]">
-            {latestLog?.temperature !== null && latestLog?.temperature !== undefined
+            {typeof latestLog?.temperature === "number"
               ? `${latestLog.temperature.toFixed(1)}°C`
               : "—"}
           </span>

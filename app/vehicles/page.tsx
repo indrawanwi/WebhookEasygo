@@ -167,13 +167,13 @@ export default function VehiclesPage() {
                     <div className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-[var(--border-color)]">
                       <span className="text-[10px] text-zinc-400 block">Distance</span>
                       <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">
-                        {v.lastDistance !== null ? `${v.lastDistance.toFixed(1)} km` : "—"}
+                        {typeof v.lastDistance === "number" ? `${v.lastDistance.toFixed(1)} km` : "—"}
                       </span>
                     </div>
                     <div className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-[var(--border-color)]">
                       <span className="text-[10px] text-zinc-400 block">Temp</span>
                       <span className="font-mono font-bold text-zinc-800 dark:text-zinc-200">
-                        {v.lastTemp !== null ? `${v.lastTemp.toFixed(1)}°C` : "—"}
+                        {typeof v.lastTemp === "number" ? `${v.lastTemp.toFixed(1)}°C` : "—"}
                       </span>
                     </div>
                   </div>
