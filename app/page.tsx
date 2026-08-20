@@ -39,15 +39,19 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [copiedEndpoint, setCopiedEndpoint] = useState(false);
   const [originUrl, setOriginUrl] = useState("");
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   useEffect(() => {
     setOriginUrl(window.location.origin);
     fetchData();
-
-    // Auto-refresh live stream every 5 seconds
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
   }, []);
+
+  // Point 1 & 2: Auto-refresh toggle with 15 seconds interval
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(fetchData, 15000);
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
 
   const fetchData = async () => {
     try {
@@ -57,7 +61,15 @@ export default function DashboardPage() {
       ]);
 
       if (statsRes.success) setStats(statsRes.data);
-      if (logsRes.success) setLiveLogs(logsRes.logs);
+      if (logsRes.success && Array.isArray(logsRes.logs)) {
+        // Ensure data baru muncul paling atas (newest first)
+        const sorted = [...logsRes.logs].sort(
+          (a, b) =>
+            new Date(b.received_at || b.event_time || 0).getTime() -
+            new Date(a.received_at || a.event_time || 0).getTime()
+        );
+        setLiveLogs(sorted);
+      }
     } catch (err) {
       console.error("Failed to refresh dashboard data:", err);
     } finally {
@@ -86,7 +98,18 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Auto-Refresh Toggle Control */}
+          <label className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 cursor-pointer select-none border border-[var(--border-color)] px-3 py-2 rounded-xl bg-[var(--card-bg)]">
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(e) => setAutoRefresh(e.target.checked)}
+              className="rounded text-blue-600 focus:ring-blue-500"
+            />
+            <span>Auto Refresh (15s)</span>
+          </label>
+
           <button
             onClick={() => {
               setLoading(true);
