@@ -85,13 +85,13 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
     );
   }
 
-  const payload = (log.payload_json && typeof log.payload_json === "object") ? log.payload_json : {};
+  const payload: any = log.payload_json || {};
   const statusVariant = getStatusBadgeVariant(log.status_do, log.ket_status_do);
   const typeVariant = getTypeBadgeVariant(log.tipe_data);
 
   // Extract Map coordinates if available in event or alarm
-  const mapLat = payload.even?.lat ?? payload.alarm?.lat ?? null;
-  const mapLon = payload.even?.lon ?? payload.alarm?.lon ?? null;
+  const mapLat = payload?.even?.lat ?? payload?.alarm?.lat ?? null;
+  const mapLon = payload?.even?.lon ?? payload?.alarm?.lon ?? null;
 
   return (
     <div className="space-y-6">
