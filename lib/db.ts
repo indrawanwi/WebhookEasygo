@@ -124,6 +124,41 @@ function getInMemoryLogs(): WebhookLogItem[] {
 // Initialize in-memory logs
 global.inMemoryLogs = getInMemoryLogs();
 
+const isLocalDb = process.env.DATABASE_URL?.includes('localhost') || process.env.DATABASE_URL?.includes('127.0.0.1');
+const usePostgres = !!(process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgresql://') && (!isVercel || !isLocalDb));
+
+const REMOTE_KV_URL = 'https://api.restful-api.dev/objects/ff8081819ff5b11001a01d86302e5880';
+
+async function fetchRemoteLogs(): Promise<WebhookLogItem[]> {
+  try {
+    const res = await fetch(REMOTE_KV_URL, { cache: 'no-store' });
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.data?.logs && Array.isArray(json.data.logs) && json.data.logs.length > 0) {
+        return json.data.logs;
+      }
+    }
+  } catch (err) {
+    console.warn("Remote KV fetch failed, using disk file:", err);
+  }
+  return loadLogsFromFile();
+}
+
+async function saveRemoteLogs(logs: WebhookLogItem[]) {
+  try {
+    await fetch(REMOTE_KV_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'webhook_easygo_logs',
+        data: { logs: logs.slice(0, 100) },
+      }),
+    });
+  } catch (err) {
+    console.warn("Remote KV save failed:", err);
+  }
+}
+
 export async function saveWebhookLog(payload: H2HDOReply): Promise<WebhookLogItem> {
   const eventTime = payload.even?.tgl_event || payload.alarm?.start_time || payload.asal?.tgl_masuk || new Date().toISOString();
   const id = `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -147,7 +182,7 @@ export async function saveWebhookLog(payload: H2HDOReply): Promise<WebhookLogIte
   };
 
   try {
-    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgresql://')) {
+    if (usePostgres) {
       await prisma.webhookLog.create({
         data: {
           id: logItem.id,
@@ -169,13 +204,17 @@ export async function saveWebhookLog(payload: H2HDOReply): Promise<WebhookLogIte
       });
     }
   } catch (err) {
-    console.warn("PostgreSQL write fallback to local disk store:", err);
+    console.warn("PostgreSQL write fallback to remote store:", err);
   }
 
-  // Always append to inMemoryLogs AND persist to disk file so data is NEVER lost across restarts
-  const logs = getInMemoryLogs();
-  logs.unshift(logItem);
+  // Fetch current logs, prepend new log, and update shared remote store
+  const logs = await fetchRemoteLogs();
+  if (!logs.some(l => l.id === logItem.id)) {
+    logs.unshift(logItem);
+  }
+  global.inMemoryLogs = logs;
   saveLogsToFile(logs);
+  saveRemoteLogs(logs).catch(() => {});
 
   return logItem;
 }
@@ -195,7 +234,7 @@ export async function getWebhookLogs(filters?: {
   const limit = filters?.limit || 20;
 
   try {
-    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgresql://')) {
+    if (usePostgres) {
       const where: any = {};
 
       if (filters?.search) {
@@ -263,8 +302,9 @@ export async function getWebhookLogs(filters?: {
     console.warn("PostgreSQL query fallback to disk file store:", err);
   }
 
-  // Reload logs from disk file in case file changed
-  const currentLogs = getInMemoryLogs();
+  // Reload logs from remote store or disk file
+  const currentLogs = await fetchRemoteLogs();
+  global.inMemoryLogs = currentLogs;
 
   let filtered = currentLogs;
 
@@ -318,7 +358,7 @@ export async function getWebhookLogs(filters?: {
 
 export async function getWebhookLogById(id: string): Promise<WebhookLogItem | null> {
   try {
-    if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgresql://')) {
+    if (usePostgres) {
       const item = await prisma.webhookLog.findUnique({ where: { id } });
       if (item) {
         return {
@@ -341,10 +381,10 @@ export async function getWebhookLogById(id: string): Promise<WebhookLogItem | nu
       }
     }
   } catch (err) {
-    console.warn("DB query by ID fallback to disk file store:", err);
+    console.warn("DB query by ID fallback to remote store:", err);
   }
 
-  const currentLogs = loadLogsFromFile();
+  const currentLogs = await fetchRemoteLogs();
   const memoryItem = currentLogs.find(l => l.id === id);
   return memoryItem || null;
 }
