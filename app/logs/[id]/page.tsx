@@ -85,7 +85,7 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
     );
   }
 
-  const payload = log.payload_json;
+  const payload = (log.payload_json && typeof log.payload_json === "object") ? log.payload_json : {};
   const statusVariant = getStatusBadgeVariant(log.status_do, log.ket_status_do);
   const typeVariant = getTypeBadgeVariant(log.tipe_data);
 
@@ -261,20 +261,20 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
                     <span className="text-zinc-400 block">Event Name</span>
-                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.even.eventNm || "—"}</span>
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.even?.eventNm || "—"}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Geofence Name</span>
-                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.even.geo_nm || "—"}</span>
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.even?.geo_nm || "—"}</span>
                   </div>
                   <div className="col-span-2">
                     <span className="text-zinc-400 block">Location Address</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{payload.even.addr || "—"}</span>
+                    <span className="text-zinc-700 dark:text-zinc-300">{payload.even?.addr || "—"}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Coordinates (Lat, Lon)</span>
                     <span className="font-mono text-zinc-700 dark:text-zinc-300">
-                      {typeof payload.even.lat === "number" && typeof payload.even.lon === "number"
+                      {typeof payload.even?.lat === "number" && typeof payload.even?.lon === "number"
                         ? `${payload.even.lat.toFixed(5)}, ${payload.even.lon.toFixed(5)}`
                         : "—"}
                     </span>
@@ -282,7 +282,7 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
                   <div>
                     <span className="text-zinc-400 block">Odometer</span>
                     <span className="font-mono text-zinc-700 dark:text-zinc-300">
-                      {payload.even.odometer ? `${payload.even.odometer} km` : "—"}
+                      {payload.even?.odometer ? `${payload.even.odometer} km` : "—"}
                     </span>
                   </div>
                 </div>
@@ -310,27 +310,27 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
                     <span className="text-zinc-400 block">Alarm Type</span>
-                    <span className="font-bold text-rose-600 dark:text-rose-400">{payload.alarm.eventNm || "—"}</span>
+                    <span className="font-bold text-rose-600 dark:text-rose-400">{payload.alarm?.eventNm || "—"}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Geofence Area</span>
-                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.alarm.geo_nm || "—"}</span>
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.alarm?.geo_nm || "—"}</span>
                   </div>
                   <div className="col-span-2">
                     <span className="text-zinc-400 block">Address</span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{payload.alarm.addr || "—"}</span>
+                    <span className="text-zinc-700 dark:text-zinc-300">{payload.alarm?.addr || "—"}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Start Time</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.alarm.start_time)}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.alarm?.start_time)}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Stop Time</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.alarm.stop_time)}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.alarm?.stop_time)}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Duration</span>
-                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.alarm.duration?.text || "—"}</span>
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.alarm?.duration?.text || "—"}</span>
                   </div>
                 </div>
               </div>
@@ -410,27 +410,27 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
               <div className="space-y-3 text-xs">
                 <div>
                   <span className="text-zinc-400 block">Geofence Name</span>
-                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.asal.geo_nm || "—"}</span>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.asal?.geo_nm || "—"}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-zinc-400 block">Geo Code</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{payload.asal.geo_code || "—"}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{payload.asal?.geo_code || "—"}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Geo ID</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{payload.asal.geo_id ?? "—"}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{payload.asal?.geo_id ?? "—"}</span>
                   </div>
                 </div>
 
                 <div className="pt-2 border-t border-dashed border-[var(--border-color)] grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-zinc-400 block">Arrival (Masuk)</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.asal.tgl_masuk)}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.asal?.tgl_masuk)}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Departure (Keluar)</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.asal.tgl_keluar)}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.asal?.tgl_keluar)}</span>
                   </div>
                 </div>
 
@@ -439,19 +439,19 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
                     <span className="text-zinc-400 block flex items-center gap-1">
                       <Unlock className="w-3 h-3 text-amber-500" /> Unlock Time
                     </span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.asal.tgl_unlock)}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.asal?.tgl_unlock)}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block flex items-center gap-1">
                       <Lock className="w-3 h-3 text-emerald-500" /> Lock Time
                     </span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.asal.tgl_lock)}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.asal?.tgl_lock)}</span>
                   </div>
                 </div>
 
                 <div className="pt-2 border-t border-[var(--border-color)]">
                   <span className="text-zinc-400 block">Duration in Origin</span>
-                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.asal.duration?.text || "—"}</span>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.asal?.duration?.text || "—"}</span>
                 </div>
               </div>
             ) : (
@@ -479,14 +479,14 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
               <div className="space-y-3 text-xs">
                 <div>
                   <span className="text-zinc-400 block">Geofence Name</span>
-                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.tujuan.geo_nm || "—"}</span>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.tujuan?.geo_nm || "—"}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-zinc-400 block">Complete Status</span>
                     <span className="font-semibold flex items-center gap-1 mt-0.5">
-                      {payload.tujuan.Complete ? (
+                      {payload.tujuan?.Complete ? (
                         <>
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                           <span className="text-emerald-600 dark:text-emerald-400">Complete</span>
@@ -501,40 +501,40 @@ export default function LogDetailPage({ params }: { params: Promise<{ id: string
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Surat Jalan</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{payload.tujuan.no_sj || "—"}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{payload.tujuan?.no_sj || "—"}</span>
                   </div>
                 </div>
 
                 <div className="pt-2 border-t border-dashed border-[var(--border-color)] grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-zinc-400 block">Arrival (Masuk)</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.tujuan.tgl_masuk)}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.tujuan?.tgl_masuk)}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Departure (Keluar)</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.tujuan.tgl_keluar)}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.tujuan?.tgl_keluar)}</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-zinc-400 block">Start Unloading (Bongkar)</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.tujuan.start_bongkar)}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.tujuan?.start_bongkar)}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Finish Unloading</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.tujuan.selesai_bongkar)}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{formatDate(payload.tujuan?.selesai_bongkar)}</span>
                   </div>
                 </div>
 
                 <div className="pt-2 border-t border-[var(--border-color)] grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-zinc-400 block">Duration in Destination</span>
-                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.tujuan.duration?.text || "—"}</span>
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{payload.tujuan?.duration?.text || "—"}</span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">Auth RFID</span>
-                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{payload.tujuan.auth_rfid || "—"}</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">{payload.tujuan?.auth_rfid || "—"}</span>
                   </div>
                 </div>
               </div>
