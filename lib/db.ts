@@ -77,6 +77,42 @@ const INITIAL_SAMPLE_LOGS: WebhookLogItem[] = [
   }
 ];
 
+export function normalizeLogItem(item: any): WebhookLogItem {
+  if (!item || typeof item !== 'object') {
+    return INITIAL_SAMPLE_LOGS[0];
+  }
+
+  const p = (item.payload_json && typeof item.payload_json === 'object')
+    ? item.payload_json
+    : item;
+
+  const eventTime = item.event_time
+    || p.even?.tgl_event
+    || p.alarm?.start_time
+    || p.asal?.tgl_masuk
+    || new Date().toISOString();
+
+  const receivedAt = item.received_at || new Date().toISOString();
+
+  return {
+    id: String(item.id || `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`),
+    do_id: item.do_id ?? p.do_id ?? null,
+    nopol: item.nopol || p.nopol || null,
+    no_do: item.no_do || p.no_do || null,
+    no_sj: item.no_sj || p.no_sj || null,
+    status_do: item.status_do ?? p.status_do ?? null,
+    ket_status_do: item.ket_status_do || p.ket_status_do || (p.status_do !== undefined && p.status_do !== null ? `Status ${p.status_do}` : null),
+    tipe_data: item.tipe_data || p.tipe_data || null,
+    ket_tipe_data: item.ket_tipe_data || p.ket_tipe_data || p.even?.eventNm || p.alarm?.eventNm || null,
+    direction_status: item.direction_status || p.direction_status || null,
+    distance_km: typeof item.distance_km === 'number' ? item.distance_km : (typeof p.distance_km === 'number' ? p.distance_km : null),
+    temperature: typeof item.temperature === 'number' ? item.temperature : (typeof p.current_temperatur1 === 'number' ? p.current_temperatur1 : null),
+    payload_json: p,
+    event_time: eventTime,
+    received_at: receivedAt,
+  };
+}
+
 // Helper functions for disk file persistence
 function loadLogsFromFile(): WebhookLogItem[] {
   try {
@@ -87,7 +123,10 @@ function loadLogsFromFile(): WebhookLogItem[] {
       const raw = fs.readFileSync(FILE_PATH, 'utf-8');
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        const validLogs = parsed
+          .map(normalizeLogItem)
+          .filter(l => l.do_id || l.nopol || l.no_do || (l.payload_json && Object.keys(l.payload_json).length > 1));
+        if (validLogs.length > 0) return validLogs;
       }
     }
     // Write sample logs initially if file system is writable
@@ -96,10 +135,10 @@ function loadLogsFromFile(): WebhookLogItem[] {
     } catch {
       // Ignore EROFS on read-only environments
     }
-    return INITIAL_SAMPLE_LOGS;
+    return INITIAL_SAMPLE_LOGS.map(normalizeLogItem);
   } catch (err) {
     console.warn("Could not read persistent log file, falling back to initial sample logs:", err);
-    return INITIAL_SAMPLE_LOGS;
+    return INITIAL_SAMPLE_LOGS.map(normalizeLogItem);
   }
 }
 
@@ -118,7 +157,7 @@ function getInMemoryLogs(): WebhookLogItem[] {
   if (!global.inMemoryLogs || global.inMemoryLogs.length === 0) {
     global.inMemoryLogs = loadLogsFromFile();
   }
-  return global.inMemoryLogs;
+  return global.inMemoryLogs.map(normalizeLogItem);
 }
 
 // Initialize in-memory logs
@@ -135,7 +174,12 @@ async function fetchRemoteLogs(): Promise<WebhookLogItem[]> {
     if (res.ok) {
       const json = await res.json();
       if (json?.data?.logs && Array.isArray(json.data.logs) && json.data.logs.length > 0) {
-        return json.data.logs;
+        const validLogs = json.data.logs
+          .map(normalizeLogItem)
+          .filter(l => l.do_id || l.nopol || l.no_do || (l.payload_json && Object.keys(l.payload_json).length > 1));
+        if (validLogs.length > 0) {
+          return validLogs;
+        }
       }
     }
   } catch (err) {
@@ -160,26 +204,27 @@ async function saveRemoteLogs(logs: WebhookLogItem[]) {
 }
 
 export async function saveWebhookLog(payload: H2HDOReply): Promise<WebhookLogItem> {
-  const eventTime = payload.even?.tgl_event || payload.alarm?.start_time || payload.asal?.tgl_masuk || new Date().toISOString();
+  const p = (payload && typeof payload === 'object') ? payload : {};
+  const eventTime = p.even?.tgl_event || p.alarm?.start_time || p.asal?.tgl_masuk || new Date().toISOString();
   const id = `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-  const logItem: WebhookLogItem = {
+  const logItem: WebhookLogItem = normalizeLogItem({
     id,
-    do_id: payload.do_id ?? null,
-    nopol: payload.nopol ?? null,
-    no_do: payload.no_do ?? null,
-    no_sj: payload.no_sj ?? null,
-    status_do: payload.status_do ?? null,
-    ket_status_do: payload.ket_status_do ?? null,
-    tipe_data: payload.tipe_data ?? null,
-    ket_tipe_data: payload.ket_tipe_data ?? null,
-    direction_status: payload.direction_status ?? null,
-    distance_km: payload.distance_km ?? null,
-    temperature: payload.current_temperatur1 ?? null,
-    payload_json: payload,
+    do_id: p.do_id ?? null,
+    nopol: p.nopol ?? null,
+    no_do: p.no_do ?? null,
+    no_sj: p.no_sj ?? null,
+    status_do: p.status_do ?? null,
+    ket_status_do: p.ket_status_do ?? null,
+    tipe_data: p.tipe_data ?? null,
+    ket_tipe_data: p.ket_tipe_data ?? null,
+    direction_status: p.direction_status ?? null,
+    distance_km: p.distance_km ?? null,
+    temperature: p.current_temperatur1 ?? null,
+    payload_json: p,
     event_time: eventTime,
     received_at: new Date().toISOString(),
-  };
+  });
 
   try {
     if (usePostgres) {
@@ -197,7 +242,7 @@ export async function saveWebhookLog(payload: H2HDOReply): Promise<WebhookLogIte
           direction_status: logItem.direction_status,
           distance_km: logItem.distance_km,
           temperature: logItem.temperature,
-          payload_json: payload as any,
+          payload_json: p as any,
           event_time: eventTime ? new Date(eventTime) : null,
           received_at: new Date(logItem.received_at),
         },
@@ -207,7 +252,7 @@ export async function saveWebhookLog(payload: H2HDOReply): Promise<WebhookLogIte
     console.warn("PostgreSQL write fallback to remote store:", err);
   }
 
-  // Fetch current logs, prepend new log, and update shared remote store
+  // Fetch current logs, prepend new log, and update shared store
   const logs = await fetchRemoteLogs();
   if (!logs.some(l => l.id === logItem.id)) {
     logs.unshift(logItem);
