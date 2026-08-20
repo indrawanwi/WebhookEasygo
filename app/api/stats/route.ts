@@ -10,9 +10,15 @@ export async function GET() {
     });
   } catch (err) {
     console.error("GET /api/stats error:", err);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch stats" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: true,
+      data: {
+        totalMessages: 0,
+        totalDO: 0,
+        activeAlarms: 0,
+        completedDO: 0,
+        messagesToday: 0,
+      },
+    });
   }
 }

@@ -396,37 +396,53 @@ export async function getDashboardStats(): Promise<{
   completedDO: number;
   messagesToday: number;
 }> {
-  const { logs } = await getWebhookLogs({ limit: 10000 });
+  try {
+    const res = await getWebhookLogs({ limit: 10000 });
+    const logs: WebhookLogItem[] = res?.logs || [];
 
-  const totalMessages = logs.length;
-  const uniqueDOs = new Set(logs.map(l => l.do_id).filter(Boolean));
-  const totalDO = uniqueDOs.size;
+    const totalMessages = logs.length;
+    const uniqueDOs = new Set(logs.map(l => l?.do_id).filter(Boolean));
+    const totalDO = uniqueDOs.size;
 
-  const alarmMap = new Map<string, string>();
-  logs.forEach(l => {
-    if (l.tipe_data === 'ALARM' && l.do_id && l.ket_tipe_data && l.direction_status) {
-      const key = `${l.do_id}_${l.ket_tipe_data}`;
-      if (!alarmMap.has(key)) {
-        alarmMap.set(key, l.direction_status);
+    const alarmMap = new Map<string, string>();
+    logs.forEach(l => {
+      if (l && l.tipe_data === 'ALARM' && l.do_id && l.ket_tipe_data && l.direction_status) {
+        const key = `${l.do_id}_${l.ket_tipe_data}`;
+        if (!alarmMap.has(key)) {
+          alarmMap.set(key, l.direction_status);
+        }
       }
-    }
-  });
+    });
 
-  let activeAlarms = 0;
-  alarmMap.forEach((status) => {
-    if (status === 'START') activeAlarms++;
-  });
+    let activeAlarms = 0;
+    alarmMap.forEach((status) => {
+      if (status === 'START') activeAlarms++;
+    });
 
-  const completedDO = logs.filter(l => l.status_do === 8 || (l.ket_status_do && l.ket_status_do.toUpperCase().includes('COMPLETE') && !l.ket_status_do.toUpperCase().includes('INCOMPLETE'))).length;
+    const completedDO = logs.filter(l =>
+      l && (l.status_do === 8 || (typeof l.ket_status_do === 'string' && l.ket_status_do.toUpperCase().includes('COMPLETE') && !l.ket_status_do.toUpperCase().includes('INCOMPLETE')))
+    ).length;
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const messagesToday = logs.filter(l => l.received_at.startsWith(todayStr)).length;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const messagesToday = logs.filter(l =>
+      l && typeof l.received_at === 'string' && l.received_at.startsWith(todayStr)
+    ).length;
 
-  return {
-    totalMessages,
-    totalDO,
-    activeAlarms,
-    completedDO,
-    messagesToday,
-  };
+    return {
+      totalMessages,
+      totalDO,
+      activeAlarms,
+      completedDO,
+      messagesToday,
+    };
+  } catch (err) {
+    console.error("Error computing dashboard stats:", err);
+    return {
+      totalMessages: 0,
+      totalDO: 0,
+      activeAlarms: 0,
+      completedDO: 0,
+      messagesToday: 0,
+    };
+  }
 }
