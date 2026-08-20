@@ -204,7 +204,7 @@ async function saveRemoteLogs(logs: WebhookLogItem[]) {
 }
 
 export async function saveWebhookLog(payload: H2HDOReply): Promise<WebhookLogItem> {
-  const p = (payload && typeof payload === 'object') ? payload : {};
+  const p: any = (payload && typeof payload === 'object') ? payload : {};
   const eventTime = p.even?.tgl_event || p.alarm?.start_time || p.asal?.tgl_masuk || new Date().toISOString();
   const id = `log_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
